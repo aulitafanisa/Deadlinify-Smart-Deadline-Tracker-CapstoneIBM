@@ -1,0 +1,1982 @@
+/* ============================================================
+   style.css — Deadlinify
+   Efek liquid glass, latar pemandangan, animasi, dan override Tailwind
+   ============================================================ */
+
+/* ── CSS Custom Properties ─────────────────────────────────── */
+:root {
+  /* Gambar latar dapat diganti via variabel ini */
+  --bg-image: url('assets/meadow-bg.jpg'); /* Otomatis memakai gambar di folder assets */
+
+  /* Palet semantik */
+  --color-emerald: #10b981;
+  --color-amber:   #f59e0b;
+  --color-rose:    #f43f5e;
+  --color-indigo:  #6366f1;
+
+  /* Kaca */
+  --glass-bg:        rgba(255, 255, 255, 0.55);
+  --glass-bg-tinted: rgba(209, 250, 229, 0.55); /* nuansa hijau emerald */
+  --glass-border:    rgba(255, 255, 255, 0.75);
+  --glass-shadow:    0 8px 32px rgba(31, 41, 55, 0.12),
+                     0 1px 2px  rgba(255, 255, 255, 0.6) inset;
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+
+  /* Radius */
+  --radius-card: 28px;
+  --radius-pill: 9999px;
+
+  /* Transisi */
+  --transition-base: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Reset Dasar ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Skip link aksesibilitas */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  background: #1e293b;
+  color: #fff;
+  border-radius: 0 0 12px 12px;
+  font-weight: 600;
+  z-index: 9999;
+  transition: top 0.2s;
+  text-decoration: none;
+}
+.skip-link:focus { top: 0; }
+
+/* Focus ring yang jelas (WCAG AA) */
+:focus-visible {
+  outline: 3px solid var(--color-indigo);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ── Latar Pemandangan ──────────────────────────────────────── */
+/*
+  IMAGE SLOT: meadow-background, ukuran ideal 1920×1080px
+  Path: assets/meadow-bg.jpg
+  Fallback: gradien langit-bukit di bawah ini
+*/
+.scene-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background-color: #dff3e7; /* fallback jika file gambar belum tersedia */
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center 58%;
+  background-repeat: no-repeat;
+}
+
+/* Gradien langit biru (tampil jika --bg-image: none) */
+.scene-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Lapisan warna transparan: menjaga foto tetap terlihat, sekaligus
+     memberi kontras agar teks dan kartu kaca mudah dibaca. */
+  background: linear-gradient(
+    180deg,
+    rgba(186, 230, 253, 0.20) 0%,
+    rgba(224, 242, 254, 0.12) 35%,
+    rgba(220, 252, 231, 0.18) 65%,
+    rgba(134, 239, 172, 0.22) 100%
+  );
+}
+
+/* Awan putih lembut (layer 1) */
+.scene-background .cloud-layer {
+  position: absolute;
+  top: 8%;
+  left: 0;
+  width: 100%;
+  height: 20%;
+  background:
+    radial-gradient(ellipse 18% 40% at 20% 50%, rgba(255,255,255,0.75) 0%, transparent 70%),
+    radial-gradient(ellipse 14% 30% at 22% 55%, rgba(255,255,255,0.5) 0%, transparent 70%),
+    radial-gradient(ellipse 20% 45% at 55% 40%, rgba(255,255,255,0.72) 0%, transparent 70%),
+    radial-gradient(ellipse 12% 28% at 58% 50%, rgba(255,255,255,0.45) 0%, transparent 70%),
+    radial-gradient(ellipse 15% 35% at 80% 55%, rgba(255,255,255,0.65) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Bukit lapis 1 — jauh (hijau pudar) */
+.scene-background .hill-far {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 42%;
+}
+
+/* Bukit lapis 2 — tengah */
+.scene-background .hill-mid {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+}
+
+/* Bukit lapis 3 — dekat */
+.scene-background .hill-near {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 18%;
+}
+
+
+/* Foto meadow sudah menjadi latar utama; layer bukit dekoratif dibuat
+   lebih halus agar tidak menutupi foto dan konten. */
+.scene-background .cloud-layer { opacity: 0.28; }
+.scene-background .hill-far,
+.scene-background .hill-mid,
+.scene-background .hill-near { opacity: 0.16; }
+
+/* ── Kartu Kaca ─────────────────────────────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+          backdrop-filter: blur(18px) saturate(1.4);
+  border: 1.5px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  /* Highlight tipis di tepi atas */
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+/* Kilau cahaya di tepi atas kartu */
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  width: 84%;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--glass-highlight) 40%,
+    var(--glass-highlight) 60%,
+    transparent 100%
+  );
+  border-radius: 0 0 50% 50%;
+  pointer-events: none;
+}
+
+/* Varian pill — untuk navbar dan badge */
+.glass-pill {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+          backdrop-filter: blur(20px) saturate(1.5);
+  border: 1.5px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.glass-pill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  width: 70%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-highlight) 50%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Varian tinted — nuansa hijau (untuk kartu Selesai / Aman) */
+.glass-tinted {
+  background: var(--glass-bg-tinted);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+          backdrop-filter: blur(18px) saturate(1.6);
+  border: 1.5px solid rgba(167, 243, 208, 0.8);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow),
+              0 0 0 1px rgba(16, 185, 129, 0.1);
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.glass-tinted::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  width: 84%;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(167, 243, 208, 0.95) 40%,
+    rgba(167, 243, 208, 0.95) 60%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* ── Micro-interactions ─────────────────────────────────────── */
+
+/* Hover: kartu naik + shadow lebih dalam */
+.glass-card:hover,
+.glass-pill:hover,
+.glass-tinted:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 48px rgba(31, 41, 55, 0.18),
+    0 1px 2px rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Tekan: mengecil sedikit */
+.glass-card:active,
+.glass-pill:active,
+.glass-tinted:active {
+  transform: scale(0.97) translateY(0);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Tombol ikon dock */
+.dock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition:
+    transform var(--transition-base),
+    background var(--transition-base),
+    box-shadow var(--transition-base);
+  color: #1e293b;
+}
+
+.dock-btn:hover {
+  transform: translateY(-6px) scale(1.1);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.15);
+}
+
+.dock-btn:active {
+  transform: translateY(-2px) scale(0.95);
+}
+
+/* Kilau shimmer pada kartu statistik */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(250%)  skewX(-15deg); }
+}
+
+.stat-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  animation: shimmer 3s infinite 1s;
+  pointer-events: none;
+}
+
+/* ── State Warna Semantik ────────────────────────────────────── */
+.state-emerald { color: #065f46; }
+.state-amber   { color: #92400e; }
+.state-rose    { color: #9f1239; }
+.state-indigo  { color: #3730a3; }
+
+.badge-emerald {
+  background: rgba(209, 250, 229, 0.85);
+  color: #065f46;
+  border: 1px solid rgba(110, 231, 183, 0.6);
+}
+.badge-amber {
+  background: rgba(254, 243, 199, 0.85);
+  color: #92400e;
+  border: 1px solid rgba(252, 211, 77, 0.6);
+}
+.badge-rose {
+  background: rgba(255, 228, 230, 0.85);
+  color: #9f1239;
+  border: 1px solid rgba(253, 164, 175, 0.6);
+}
+.badge-indigo {
+  background: rgba(224, 231, 255, 0.85);
+  color: #3730a3;
+  border: 1px solid rgba(165, 180, 252, 0.6);
+}
+
+/* ── Link Aktif Navigasi ─────────────────────────────────────── */
+.nav-active {
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: #1e293b !important;
+  font-weight: 600;
+}
+
+/* ── Placeholder kartu dashboard ────────────────────────────── */
+.placeholder-inner {
+  border: 2px dashed rgba(148, 163, 184, 0.5);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  min-height: 120px;
+}
+
+/* ── Chip Notifikasi Denyut ─────────────────────────────────── */
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  70%  { transform: scale(1.6); opacity: 0;   }
+  100% { transform: scale(1);   opacity: 0;   }
+}
+
+.notif-pulse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--color-amber);
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+/* ── Floating Pomodoro (legacy class — widget kini via layout.js) ─── */
+/* Kelas ini dipertahankan untuk kompatibilitas; elemen aktif: .pomo-mini-widget */
+
+/* ── Layout Utama ───────────────────────────────────────────── */
+.main-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding-bottom: 6rem; /* ruang untuk dock */
+}
+
+/* ── Dock Melayang ──────────────────────────────────────────── */
+.dock-floating {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 0.6rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ── Grid Dashboard ─────────────────────────────────────────── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  /* Form tugas & daftar countdown lebih lebar di desktop */
+  .dashboard-grid .col-span-2 {
+    grid-column: span 2;
+  }
+}
+
+/* ── Respek prefers-reduced-motion ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .glass-card:hover,
+  .glass-pill:hover,
+  .glass-tinted:hover,
+  .dock-btn:hover {
+    transform: none;
+  }
+}
+
+/* ── Scrollbar halus ────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 3px;
+}
+
+/* ============================================================
+   LANGKAH 2 — Input Kaca, Prioritas, Toast, Daftar Tugas Awal
+   ============================================================ */
+
+/* ── Input & Textarea Kaca ──────────────────────────────────── */
+.glass-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  border-radius: 14px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
+  color: #1e293b;
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    background var(--transition-base);
+  outline: none;
+  /* teks placeholder lebih terang */
+}
+
+.glass-input::placeholder { color: #94a3b8; }
+
+/* Glow saat fokus */
+.glass-input:focus {
+  border-color: rgba(99, 102, 241, 0.7);
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.18),
+    0 2px 8px rgba(99, 102, 241, 0.12);
+}
+
+/* Select bergaya kaca — sembunyikan panah default lalu tambah custom */
+.glass-select {
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem !important;
+  cursor: pointer;
+}
+
+/* Label field form */
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.02em;
+}
+
+/* Pesan error field (aria-live) */
+.field-error {
+  font-size: 0.75rem;
+  color: #be123c;
+  margin-top: 0.3rem;
+  min-height: 1.1em; /* hindari layout shift */
+  display: block;
+}
+
+/* ── Tombol Prioritas (radiogroup kaca) ─────────────────────── */
+.priority-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Input radio disembunyikan; label berfungsi sebagai tombol */
+.priority-group input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.priority-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  background: rgba(255, 255, 255, 0.45);
+  color: #64748b;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base),
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+  user-select: none;
+}
+
+.priority-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* Fokus keyboard pada label (via :has selector dgn fallback JS) */
+.priority-group input[type="radio"]:focus-visible + .priority-btn {
+  outline: 3px solid var(--color-indigo);
+  outline-offset: 2px;
+}
+
+/* Terpilih: High */
+.priority-group input[type="radio"][value="High"]:checked + .priority-btn {
+  background: rgba(255, 228, 230, 0.85);
+  border-color: rgba(253, 164, 175, 0.8);
+  color: #9f1239;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.2);
+}
+
+/* Terpilih: Medium */
+.priority-group input[type="radio"][value="Medium"]:checked + .priority-btn {
+  background: rgba(254, 243, 199, 0.85);
+  border-color: rgba(252, 211, 77, 0.8);
+  color: #92400e;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+/* Terpilih: Low */
+.priority-group input[type="radio"][value="Low"]:checked + .priority-btn {
+  background: rgba(209, 250, 229, 0.85);
+  border-color: rgba(110, 231, 183, 0.8);
+  color: #065f46;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+/* ── Tombol Submit Form ──────────────────────────────────────── */
+.btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.5rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.85);
+  color: #fff;
+  border: 1.5px solid rgba(129, 140, 248, 0.6);
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+  -webkit-backdrop-filter: blur(8px);
+          backdrop-filter: blur(8px);
+}
+
+.btn-submit:hover {
+  background: rgba(79, 70, 229, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+}
+
+.btn-submit:active {
+  transform: scale(0.97);
+  box-shadow: none;
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Toast Kaca ─────────────────────────────────────────────── */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0)     scale(1);    }
+  to   { opacity: 0; transform: translateY(8px)   scale(0.95); }
+}
+
+#toast-container {
+  position: fixed;
+  bottom: 5.5rem;   /* di atas dock */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+          backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.14);
+  animation: toast-in 0.28s ease forwards;
+  pointer-events: all;
+  white-space: nowrap;
+}
+
+.toast.removing {
+  animation: toast-out 0.25s ease forwards;
+}
+
+.toast-icon { font-size: 1rem; line-height: 1; }
+
+/* ── Daftar Tugas Awal (proof-of-concept) ───────────────────── */
+.task-proof-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.task-proof-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  font-size: 0.82rem;
+  color: #334155;
+  transition: background var(--transition-base);
+}
+
+.task-proof-item.is-done {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.task-proof-item:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* Dot warna prioritas */
+.priority-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.priority-dot.high   { background: #f43f5e; }
+.priority-dot.medium { background: #f59e0b; }
+.priority-dot.low    { background: #10b981; }
+
+/* ============================================================
+   LANGKAH 3 — Countdown Cards, Filter, Phases, Delete Popover
+   ============================================================ */
+
+/* ── Kartu Countdown (glass-card dengan fase warna) ─────────── */
+
+/*
+  Tiga fase + terlambat:
+    .phase-safe     — lebih dari 72 jam  (emerald)
+    .phase-warning  — 24–72 jam          (amber)
+    .phase-critical — kurang dari 24 jam (rose)
+    .phase-overdue  — deadline lewat     (merah tua)
+*/
+
+/* Safe — border/glow hijau emerald */
+.countdown-card.phase-safe {
+  border-color: rgba(110, 231, 183, 0.65);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px rgba(16, 185, 129, 0.15),
+    0 4px 20px rgba(16, 185, 129, 0.10);
+}
+
+/* Warning — border/glow amber */
+.countdown-card.phase-warning {
+  border-color: rgba(252, 211, 77, 0.70);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px rgba(245, 158, 11, 0.18),
+    0 4px 20px rgba(245, 158, 11, 0.12);
+}
+
+/* Critical — border/glow rose + pulse animasi */
+.countdown-card.phase-critical {
+  border-color: rgba(253, 164, 175, 0.75);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px rgba(244, 63, 94, 0.20),
+    0 4px 24px rgba(244, 63, 94, 0.18);
+  animation: card-critical-pulse 2.5s ease-in-out infinite;
+}
+
+/* Overdue — merah tua, lebih padat */
+.countdown-card.phase-overdue {
+  border-color: rgba(252, 165, 165, 0.80);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px rgba(239, 68, 68, 0.22),
+    0 4px 24px rgba(239, 68, 68, 0.20);
+  opacity: 0.92;
+}
+
+/* Kartu Selesai — meredup dan teks dicoret */
+.countdown-card.is-done {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+.countdown-card.is-done .card-title {
+  text-decoration: line-through;
+  text-decoration-color: rgba(100, 116, 139, 0.6);
+}
+
+/* Animasi pulse border Critical */
+@keyframes card-critical-pulse {
+  0%,  100% { box-shadow: var(--glass-shadow), 0 0 0 1px rgba(244,63,94,0.20), 0 4px 24px rgba(244,63,94,0.18); }
+  50%        { box-shadow: var(--glass-shadow), 0 0 0 2px rgba(244,63,94,0.40), 0 8px 32px rgba(244,63,94,0.30); }
+}
+
+/* ── Label Fase (badge teks + ikon, bukan warna saja) ────────── */
+.phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.phase-badge.safe {
+  background: rgba(209, 250, 229, 0.85);
+  color: #065f46;
+  border: 1px solid rgba(110, 231, 183, 0.5);
+}
+.phase-badge.warning {
+  background: rgba(254, 243, 199, 0.85);
+  color: #92400e;
+  border: 1px solid rgba(252, 211, 77, 0.5);
+}
+.phase-badge.critical {
+  background: rgba(255, 228, 230, 0.85);
+  color: #9f1239;
+  border: 1px solid rgba(253, 164, 175, 0.5);
+}
+.phase-badge.overdue {
+  background: rgba(254, 226, 226, 0.85);
+  color: #7f1d1d;
+  border: 1px solid rgba(252, 165, 165, 0.5);
+}
+.phase-badge.done {
+  background: rgba(241, 245, 249, 0.8);
+  color: #475569;
+  border: 1px solid rgba(203, 213, 225, 0.5);
+}
+
+/* ── Countdown timer display ─────────────────────────────────── */
+.countdown-display {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.countdown-display.phase-safe     { color: #065f46; }
+.countdown-display.phase-warning  { color: #92400e; }
+.countdown-display.phase-critical { color: #9f1239; }
+.countdown-display.phase-overdue  { color: #7f1d1d; }
+.countdown-display.is-done        { color: #94a3b8; font-size: 0.85rem; font-family: inherit; font-weight: 400; letter-spacing: 0; }
+
+/* ── Badge Tipe & Mata Kuliah ────────────────────────────────── */
+.badge-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(224, 231, 255, 0.75);
+  color: #3730a3;
+  border: 1px solid rgba(165, 180, 252, 0.5);
+}
+.badge-course {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(241, 245, 249, 0.75);
+  color: #475569;
+  border: 1px solid rgba(203, 213, 225, 0.5);
+  max-width: 120px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── Indikator Prioritas (strip kiri) ────────────────────────── */
+.priority-strip {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 3px 3px 0;
+}
+.priority-strip.high   { background: var(--color-rose);    box-shadow: 0 0 6px rgba(244,63,94,0.35); }
+.priority-strip.medium { background: var(--color-amber);   box-shadow: 0 0 6px rgba(245,158,11,0.3); }
+.priority-strip.low    { background: var(--color-emerald); box-shadow: 0 0 6px rgba(16,185,129,0.3); }
+
+/* ── Grid kartu countdown ────────────────────────────────────── */
+#countdown-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+@media (min-width: 640px) {
+  #countdown-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  #countdown-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Kartu countdown sebagai glass-card dengan posisi relative */
+.countdown-card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+          backdrop-filter: blur(18px) saturate(1.4);
+  border: 1.5px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 1rem 1rem 1.25rem;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    opacity 0.4s ease,
+    filter 0.4s ease;
+}
+/* Kilau atas kartu countdown */
+.countdown-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 8%; width: 84%; height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--glass-highlight) 40%, var(--glass-highlight) 60%, transparent);
+  border-radius: 0 0 50% 50%;
+  pointer-events: none;
+}
+.countdown-card:not(.is-done):hover {
+  transform: translateY(-3px);
+}
+.countdown-card:not(.is-done):active {
+  transform: scale(0.98);
+}
+
+/* ── Tombol Aksi Kartu ───────────────────────────────────────── */
+.card-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  color: #64748b;
+  transition:
+    background var(--transition-base),
+    transform var(--transition-base),
+    color var(--transition-base);
+  flex-shrink: 0;
+}
+.card-action-btn:hover {
+  transform: scale(1.1);
+}
+.card-action-btn.btn-check:hover  { background: rgba(209, 250, 229, 0.85); color: #065f46; }
+.card-action-btn.btn-delete:hover { background: rgba(255, 228, 230, 0.85); color: #9f1239; }
+
+/* ── Popover Konfirmasi Hapus ────────────────────────────────── */
+.delete-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(16px);
+          backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(31, 41, 55, 0.18);
+  padding: 0.75rem 1rem;
+  min-width: 180px;
+  text-align: center;
+  animation: toast-in 0.2s ease forwards;
+}
+.delete-popover p {
+  font-size: 0.8rem;
+  color: #334155;
+  margin-bottom: 0.6rem;
+  font-weight: 500;
+}
+.delete-popover .popover-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.popover-btn {
+  padding: 0.3rem 0.8rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--transition-base), transform var(--transition-base);
+}
+.popover-btn:active { transform: scale(0.95); }
+.popover-btn.confirm {
+  background: rgba(255, 228, 230, 0.9);
+  color: #9f1239;
+  border-color: rgba(253, 164, 175, 0.7);
+}
+.popover-btn.confirm:hover { background: rgba(254, 205, 211, 0.95); }
+.popover-btn.cancel {
+  background: rgba(241, 245, 249, 0.85);
+  color: #475569;
+  border-color: rgba(203, 213, 225, 0.6);
+}
+.popover-btn.cancel:hover { background: rgba(226, 232, 240, 0.9); }
+
+/* ── Filter Chips ────────────────────────────────────────────── */
+.filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.40);
+  color: #475569;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base),
+    transform var(--transition-base);
+  -webkit-backdrop-filter: blur(6px);
+          backdrop-filter: blur(6px);
+}
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.65);
+  transform: translateY(-1px);
+}
+.filter-chip.active {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #3730a3;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+/* Chip warna per prioritas */
+.filter-chip[data-filter="High"].active   { background: rgba(255,228,230,0.82); color: #9f1239; border-color: rgba(253,164,175,0.6); }
+.filter-chip[data-filter="Medium"].active { background: rgba(254,243,199,0.82); color: #92400e; border-color: rgba(252,211,77,0.6);  }
+.filter-chip[data-filter="Low"].active    { background: rgba(209,250,229,0.82); color: #065f46; border-color: rgba(110,231,183,0.6); }
+
+/* ── Empty State ─────────────────────────────────────────────── */
+.countdown-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  color: #94a3b8;
+  text-align: center;
+}
+.countdown-empty svg { opacity: 0.25; }
+.countdown-empty p   { font-size: 0.85rem; max-width: 260px; line-height: 1.5; }
+
+/* ── Animasi masuk/keluar kartu ──────────────────────────────── */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+@keyframes card-exit {
+  from { opacity: 1; transform: scale(1);    max-height: 200px; margin-bottom: 0.85rem; }
+  to   { opacity: 0; transform: scale(0.95); max-height: 0;     margin-bottom: 0;       }
+}
+
+.countdown-card.entering {
+  animation: card-enter 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.countdown-card.exiting {
+  animation: card-exit 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── prefers-reduced-motion override (Langkah 3) ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .countdown-card.phase-critical { animation: none; }
+  .countdown-card.entering       { animation: none; opacity: 1; transform: none; }
+  .countdown-card.exiting        { animation: none; }
+}
+
+/* ============================================================
+   LANGKAH 4 — Kartu Izin Notifikasi & Popover Pengaturan
+   ============================================================ */
+
+/* ── Kartu Izin (tengah bawah, di atas dock) ────────────────── */
+.notif-permission-card {
+  position: fixed;
+  bottom: 5.5rem;       /* di atas dock (~80px) */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(340px, calc(100vw - 2rem));
+  padding: 1.25rem 1.25rem 1rem;
+  /* Transisi masuk/keluar */
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Popover Pengaturan Notifikasi (dropdown dari chip navbar) ── */
+.notif-settings-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 70;
+  width: 260px;
+  padding: 1rem;
+  /* Transisi masuk/keluar */
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── State animasi masuk/keluar (shared) ───────────────────── */
+.notif-card-hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(12px) scale(0.97);
+  pointer-events: none;
+}
+/* Override transform-origin untuk popover (tidak di-translate-X) */
+.notif-settings-popover.notif-card-hidden {
+  transform: translateY(-6px) scale(0.97);
+}
+
+.notif-card-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: all;
+}
+.notif-settings-popover.notif-card-visible {
+  transform: translateY(0) scale(1);
+}
+
+/* ── prefers-reduced-motion: matikan transisi ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .notif-permission-card,
+  .notif-settings-popover {
+    transition: opacity 0.01ms;
+  }
+  .notif-card-hidden  { transform: translateX(-50%); }
+  .notif-card-visible { transform: translateX(-50%); }
+  .notif-settings-popover.notif-card-hidden  { transform: none; }
+  .notif-settings-popover.notif-card-visible { transform: none; }
+}
+
+/* ============================================================
+   LANGKAH 5 (ARSITEKTUR) — Transisi Halaman & Dock Aktif
+   ============================================================ */
+
+/* ── Fade-in saat halaman dimuat ──────────────────────────── */
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.page-fade-in {
+  animation: page-fade-in 0.25s ease forwards;
+}
+
+/* ── Fade-out sebelum navigasi ────────────────────────────── */
+@keyframes page-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.page-fade-out {
+  animation: page-fade-out 0.18s ease forwards;
+  pointer-events: none;
+}
+
+/* ── Tombol dock aktif (halaman saat ini) ─────────────────── */
+.dock-btn-active {
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: #3730a3 !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+/* ── prefers-reduced-motion: matikan fade halaman ────────── */
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-in  { animation: none; }
+  .page-fade-out { animation: none; }
+}
+
+/* ============================================================
+   LANGKAH 5 (POMODORO) — SVG Ring, Kontrol, Mini-Widget
+   ============================================================ */
+
+/* ── Kartu Pomodoro Utama ────────────────────────────────── */
+.pomo-card {
+  /* Mode fokus: indigo tint */
+  --pomo-accent: rgba(99,102,241,0.75);
+}
+.pomo-card[data-mode="break"] {
+  /* Mode istirahat: emerald tint */
+  --pomo-accent: rgba(16,185,129,0.8);
+}
+
+/* ── SVG Ring Progress ───────────────────────────────────── */
+.pomo-ring-wrap {
+  position: relative;
+  display: inline-block;
+  width: clamp(180px, 55vw, 240px);
+  height: clamp(180px, 55vw, 240px);
+  margin: 0 auto;
+}
+
+.pomo-ring-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Track — lingkaran abu-abu latar */
+.pomo-ring-track {
+  stroke: rgba(203, 213, 225, 0.45);
+}
+
+/* Progress ring — stroke via JS (warna sesuai mode) */
+.pomo-ring-progress {
+  stroke: rgba(99, 102, 241, 0.75); /* default indigo */
+  /* stroke-dasharray dan stroke-dashoffset di-set via JS */
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 0.4s ease;
+}
+
+/* Teks di tengah ring */
+.pomo-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.pomo-time-big {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: clamp(2rem, 10vw, 3rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.pomo-mode-label-small {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Tombol Kontrol Timer ────────────────────────────────── */
+.pomo-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  cursor: pointer;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  transition:
+    transform var(--transition-base),
+    background var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.pomo-ctrl-secondary {
+  width: 52px;
+  height: 52px;
+  background: rgba(255, 255, 255, 0.55);
+  color: #475569;
+}
+
+.pomo-ctrl-secondary:hover {
+  transform: translateY(-3px) scale(1.08);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 20px rgba(31, 41, 55, 0.12);
+}
+
+.pomo-ctrl-secondary:active { transform: scale(0.94); }
+
+.pomo-ctrl-primary {
+  width: 68px;
+  height: 68px;
+  background: rgba(99, 102, 241, 0.82);
+  color: #fff;
+  border-color: rgba(129, 140, 248, 0.55);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.28);
+}
+
+.pomo-ctrl-primary:hover {
+  transform: translateY(-4px) scale(1.07);
+  background: rgba(79, 70, 229, 0.9);
+  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.38);
+}
+
+.pomo-ctrl-primary:active { transform: scale(0.93); }
+
+/* Mode istirahat — tombol primer hijau */
+.pomo-card[data-mode="break"] .pomo-ctrl-primary {
+  background: rgba(16, 185, 129, 0.82);
+  border-color: rgba(110, 231, 183, 0.55);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.28);
+}
+
+.pomo-card[data-mode="break"] .pomo-ctrl-primary:hover {
+  background: rgba(5, 150, 105, 0.9);
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.38);
+}
+
+/* ── Tombol Durasi Aktif ─────────────────────────────────── */
+.pomo-dur-btn {
+  cursor: pointer;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.pomo-dur-btn:hover {
+  transform: translateY(-3px);
+}
+
+.pomo-dur-btn:active {
+  transform: scale(0.95);
+}
+
+.pomo-dur-active {
+  box-shadow: 0 0 0 2.5px rgba(99, 102, 241, 0.55),
+              var(--glass-shadow);
+}
+
+/* ── Mini-Widget Pomodoro (layout.js) ───────────────────── */
+.pomo-mini-widget {
+  position: fixed;
+  bottom: 6rem;      /* di atas dock */
+  right: 1.5rem;
+  z-index: 40;
+  width: 210px;
+  padding: 0.85rem;
+  /* Tersembunyi secara default — muncul saat ada sesi aktif */
+  opacity: 0;
+  transform: translateY(12px) scale(0.95);
+  pointer-events: none;
+  transition:
+    opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: grab;
+}
+
+.pomo-mini-widget:active { cursor: grabbing; }
+
+/* Terlihat saat ada sesi aktif */
+.pomo-mini-widget.pomo-mini-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: all;
+}
+
+/* Header widget */
+.pomo-mini-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+/* State Collapsed (diciutkan) */
+.pomo-mini-widget.pomo-mini-collapsed .pomo-mini-widget > *:not(.pomo-mini-header) {
+  display: none;
+}
+
+/* Citutkan semua konten kecuali header */
+.pomo-mini-widget.pomo-mini-collapsed p,
+.pomo-mini-widget.pomo-mini-collapsed div[role="progressbar"],
+.pomo-mini-widget.pomo-mini-collapsed div:last-child {
+  display: none;
+}
+
+/* Posisi mobile: di atas dock, lebih ke tengah */
+@media (max-width: 639px) {
+  .pomo-mini-widget {
+    right: 0.75rem;
+    bottom: 5.5rem;
+    width: 185px;
+  }
+}
+
+/* ── prefers-reduced-motion: matikan transisi ring & widget ── */
+@media (prefers-reduced-motion: reduce) {
+  .pomo-ring-progress {
+    transition: none;
+  }
+  .pomo-mini-widget {
+    transition: opacity 0.01ms;
+  }
+  .pomo-ctrl-primary:hover,
+  .pomo-ctrl-secondary:hover,
+  .pomo-dur-btn:hover {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   LANGKAH 6 (CHARTS) — Container Grafik & Insight
+   ============================================================ */
+
+/* ── Container Doughnut Chart ────────────────────────────── */
+.chart-container-doughnut {
+  position: relative;
+  /* Tinggi tetap: grafik donat butuh ruang persegi */
+  height: 280px;
+  width: 100%;
+}
+
+/* ── Container Bar Chart ─────────────────────────────────── */
+.chart-container-bar {
+  position: relative;
+  height: 220px;
+  width: 100%;
+}
+
+/* Canvas transparan (background ditentukan kartu kaca di atasnya) */
+.chart-container-doughnut canvas,
+.chart-container-bar canvas {
+  background: transparent;
+}
+
+/* ── Teks Insight di bawah Bar Chart ─────────────────────── */
+.chart-insight {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #475569;          /* slate-600 */
+  text-align: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  min-height: 2rem;         /* hindari layout shift saat kosong */
+  line-height: 1.5;
+}
+
+/* ── Empty State Grafik ──────────────────────────────────── */
+.chart-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 100%;
+  min-height: 160px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+/* ── prefers-reduced-motion: matikan animasi Chart.js ────── */
+/* Chart.js menghormati ini via animation duration, tapi tambahkan
+   selector canvas sebagai failsafe */
+@media (prefers-reduced-motion: reduce) {
+  .chart-container-doughnut canvas,
+  .chart-container-bar canvas {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   LANGKAH 7 (POLISH FINAL) — Depth, Touch, Stagger, Fallbacks
+   ============================================================ */
+
+/* ── @supports: fallback solid jika backdrop-filter tidak didukung ── */
+/*
+   Browser tanpa backdrop-filter (Firefox lama, older Android WebView) mendapat
+   latar putih semi-opaque yang cukup kontras.
+*/
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-card  { background: rgba(255, 255, 255, 0.93); }
+  .glass-pill  { background: rgba(255, 255, 255, 0.96); }
+  .glass-tinted{ background: rgba(220, 252, 231, 0.93); }
+  .countdown-card { background: rgba(255, 255, 255, 0.93); }
+  .pomo-mini-widget { background: rgba(255, 255, 255, 0.95); }
+}
+
+/* ── Kedalaman kaca: inner shadow & glow ────────────────────── */
+/*
+   Tambahkan lapisan inner highlight yang lebih terasa:
+   highlight di tepi atas lebih lebar + shadow dalam yang hangat.
+*/
+.glass-card,
+.glass-tinted {
+  box-shadow:
+    0 8px 32px rgba(31, 41, 55, 0.12),
+    0 1px 2px  rgba(255, 255, 255, 0.6) inset,
+    0 -1px 0   rgba(31, 41, 55, 0.04)  inset;
+}
+
+/* Hover lebih dramatis di desktop */
+@media (hover: hover) {
+  .glass-card:hover,
+  .glass-tinted:hover {
+    box-shadow:
+      0 20px 48px rgba(31, 41, 55, 0.16),
+      0 1px 2px  rgba(255, 255, 255, 0.7) inset,
+      0 -1px 0   rgba(31, 41, 55, 0.05)  inset;
+  }
+}
+
+/* ── Animasi masuk bertahap antar seksi (stagger) ────────────── */
+/*
+   Setiap seksi/artikel menerima class .section-enter saat di-mount
+   oleh layout.js. Delay antar elemen via --stagger-idx.
+   Fallback: tanpa animasi jika prefers-reduced-motion aktif.
+*/
+@keyframes section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-enter {
+  animation:
+    section-enter 0.35s cubic-bezier(0.4, 0, 0.2, 1)
+    calc(var(--stagger-idx, 0) * 60ms)
+    both;
+}
+
+/* Stagger untuk kartu statistik hero */
+.hero-stat-0 { --stagger-idx: 0; }
+.hero-stat-1 { --stagger-idx: 1; }
+.hero-stat-2 { --stagger-idx: 2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .section-enter { animation: none; opacity: 1; transform: none; }
+}
+
+/* ── Touch targets minimal 44×44px (WCAG 2.5.5) ─────────────── */
+/*
+   Tombol ikon kecil di kartu countdown dan dock diperbesar area sentuh
+   via min-width/min-height tanpa mengubah tampilan visual.
+*/
+.card-action-btn {
+  min-width:  44px;
+  min-height: 44px;
+  /* override display agar block-level min-height berlaku */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tombol dock — sudah 48px, aman */
+.dock-btn {
+  min-width:  44px;
+  min-height: 44px;
+}
+
+/* Filter chip — min height agar jari bisa menekan */
+.filter-chip {
+  min-height: 36px;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+/* Priority buttons — tinggi minimal sentuh */
+.priority-btn {
+  min-height: 38px;
+}
+
+/* Tombol kontrol Pomodoro — sudah di atas 44px via .pomo-ctrl-* */
+
+/* ── Mini-widget Pomodoro: z-index di atas dock di mobile ────── */
+/*
+   Pada layar sempit (≤480px) dock berada di bottom-center.
+   Widget dipindahkan ke pojok kiri bawah agar tidak tumpang tindih.
+*/
+@media (max-width: 479px) {
+  .pomo-mini-widget {
+    right: auto;
+    left:  0.75rem;
+    bottom: 5.5rem;  /* tepat di atas dock */
+    z-index: 55;     /* di atas dock (z-50) */
+    width: 175px;
+  }
+}
+
+/* ── Spasi dan radius konsisten lintas halaman ───────────────── */
+/*
+   Pastikan semua artikel/kartu menggunakan border-radius yang sama.
+   Kartu tugas di halaman fokus sudah pakai var(--radius-card).
+   Tambahkan konsistensi untuk .glass-tinted dan .countdown-card.
+*/
+.glass-tinted {
+  border-radius: var(--radius-card);
+}
+
+/* ── Transisi halaman yang lebih halus ───────────────────────── */
+/*
+   Perpanjang durasi fade-out sedikit agar tidak terlihat tiba-tiba.
+   Juga tambahkan blur ringan untuk kesan depth yang lebih premium.
+*/
+@keyframes page-fade-out-polish {
+  0%   { opacity: 1; filter: blur(0);    }
+  100% { opacity: 0; filter: blur(2px);  }
+}
+
+body.page-fade-out {
+  animation: page-fade-out-polish 0.22s ease forwards;
+  pointer-events: none;
+}
+
+/* ── prefers-contrast: high — kurangi transparansi ──────────── */
+/*
+   Pengguna dengan setting kontras tinggi mendapatkan background yang
+   lebih solid dan border yang lebih tebal untuk keterbacaan.
+*/
+@media (prefers-contrast: more) {
+  :root {
+    --glass-bg:        rgba(255, 255, 255, 0.95);
+    --glass-bg-tinted: rgba(220, 252, 231, 0.95);
+    --glass-border:    rgba(15, 23, 42, 0.35);
+    --glass-shadow:    0 4px 16px rgba(0, 0, 0, 0.25);
+    --glass-highlight: rgba(255, 255, 255, 1);
+  }
+  .glass-card,
+  .glass-pill,
+  .glass-tinted {
+    border-width: 2px;
+  }
+  .countdown-card {
+    border-width: 2px;
+  }
+  /* Warna teks lebih gelap untuk kontras lebih tinggi */
+  .countdown-display { color: #0f172a !important; }
+  .phase-badge       { filter: saturate(1.5) brightness(0.85); }
+}
+
+/* ── Navbar aktif: penanda yang lebih jelas ──────────────────── */
+.nav-active {
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: #1e293b !important;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(31, 41, 55, 0.1);
+}
+
+/* ── Perbaikan urutan fokus visible ──────────────────────────── */
+/*
+   Tombol di dalam `.glass-card` yang overflow:hidden bisa memotong
+   outline focus. Paksa overflow visible khusus saat ada elemen focused.
+*/
+.glass-card:focus-within,
+.glass-pill:focus-within,
+.glass-tinted:focus-within {
+  overflow: visible;
+}
+
+/* ── Footer spacing konsisten ────────────────────────────────── */
+footer[role="contentinfo"] {
+  padding-bottom: 6rem; /* beri ruang di atas dock pada semua halaman */
+}
+
+/* ============================================================
+   PERFORMANCE PATCH — Deadlinify
+   Kurangi beban rendering dan hentikan tombol bergeser saat hover/klik.
+   ============================================================ */
+
+/* Blur besar pada banyak kartu dapat membebani GPU, terutama laptop lama. */
+.glass-card,
+.glass-tinted,
+.countdown-card {
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+          backdrop-filter: blur(8px) saturate(1.15);
+}
+
+.glass-pill {
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+          backdrop-filter: blur(10px) saturate(1.15);
+}
+
+/* Tombol tidak lagi berpindah posisi/berubah ukuran saat hover atau ditekan.
+   Efek interaksi tetap terlihat melalui warna dan shadow. */
+button,
+[role="button"],
+.dock-btn,
+.priority-btn,
+.btn-submit,
+.card-action-btn,
+.popover-btn,
+.filter-chip,
+.pomo-ctrl-btn,
+.pomo-dur-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:hover,
+button:active,
+[role="button"]:hover,
+[role="button"]:active,
+.dock-btn:hover,
+.dock-btn:active,
+.priority-btn:hover,
+.btn-submit:hover,
+.btn-submit:active,
+.card-action-btn:hover,
+.popover-btn:active,
+.filter-chip:hover,
+.pomo-ctrl-primary:hover,
+.pomo-ctrl-primary:active,
+.pomo-ctrl-secondary:hover,
+.pomo-ctrl-secondary:active,
+.pomo-dur-btn:hover,
+.pomo-dur-btn:active {
+  transform: none !important;
+}
+
+/* Hindari transisi transform pada elemen interaktif; transisi warna tetap halus. */
+button,
+[role="button"],
+.dock-btn,
+.priority-btn,
+.btn-submit,
+.card-action-btn,
+.popover-btn,
+.filter-chip,
+.pomo-ctrl-btn,
+.pomo-dur-btn {
+  transition-property: color, background-color, background, border-color, box-shadow, opacity !important;
+}
+
+/* Perangkat touch tidak memerlukan animasi hover yang dapat terasa seperti loncat. */
+@media (hover: none), (pointer: coarse) {
+  .glass-card:hover,
+  .glass-pill:hover,
+  .glass-tinted:hover,
+  .countdown-card:not(.is-done):hover {
+    transform: none;
+  }
+}
+
+/* Hormati preferensi pengurangan gerakan dan kurangi animasi dekoratif. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* ============================================================
+   HOTFIX — NAVBAR STABILITY & LOW-END PERFORMANCE
+   ============================================================ */
+/* Navbar atas dan dock bawah memakai left:50% + translateX(-50%).
+   Hover/active pada .glass-pill sebelumnya menimpa transform tersebut,
+   sehingga kedua navbar tampak melompat ke kanan. Pertahankan centering. */
+header[role="banner"] > nav.glass-pill,
+header[role="banner"] > nav.glass-pill:hover,
+header[role="banner"] > nav.glass-pill:active,
+.dock-floating,
+.dock-floating:hover,
+.dock-floating:active {
+  transform: translateX(-50%) !important;
+}
+
+/* Jangan animasikan transform pada wadah navbar ketika pointer masuk. */
+header[role="banner"] > nav.glass-pill,
+.dock-floating {
+  transition: background-color 160ms ease, box-shadow 160ms ease !important;
+}
+
+/* Glass blur di banyak elemen sekaligus mahal pada perangkat terbatas.
+   Gunakan kaca lebih solid dengan blur minimal agar tampilan tetap serupa. */
+.glass-card,
+.glass-tinted,
+.countdown-card {
+  -webkit-backdrop-filter: blur(3px) !important;
+  backdrop-filter: blur(3px) !important;
+}
+.glass-pill {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Hilangkan animasi dekoratif yang berjalan terus-menerus. */
+.stat-shimmer::after,
+.notif-pulse::before,
+.phase-critical {
+  animation: none !important;
+}
+
+/* Navigasi halaman tidak perlu menunggu fade-out atau menghitung filter blur. */
+body.page-fade-out {
+  animation: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+.page-fade-in {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Hindari horizontal overflow yang membuat layout/nav terlihat bergeser. */
+html, body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+
+/* DEADLINIFY — SOFT LAVENDER / BLUE LIQUID GLASS REFRESH */
+:root {
+  /* Satu keluarga warna utama: lavender, periwinkle, dan misty blue. */
+  --bg-image: none;
+  --color-emerald: #6f9d9a;
+  --color-amber: #b99a72;
+  --color-rose: #b98291;
+  --color-indigo: #718bc4;
+  --glass-bg: rgba(246, 248, 255, .52);
+  --glass-bg-tinted: rgba(218, 228, 250, .48);
+  --glass-border: rgba(255, 255, 255, .76);
+  --glass-shadow: 0 16px 42px rgba(57, 70, 112, .13), 0 1px 0 rgba(255,255,255,.82) inset;
+  --glass-highlight: rgba(255,255,255,.96);
+}
+.scene-background {
+  background: #c9cbe4;
+  background-image:
+    radial-gradient(ellipse at 14% 12%, rgba(255,255,255,.72), transparent 38%),
+    radial-gradient(ellipse at 82% 76%, rgba(167,190,226,.62), transparent 43%),
+    linear-gradient(135deg, #d9d8ee 0%, #b9c5e2 52%, #d6d8eb 100%);
+}
+.scene-background::before { background: linear-gradient(145deg,rgba(255,255,255,.10),rgba(111,137,190,.08)); }
+.scene-background .cloud-layer,.scene-background .hill-far,.scene-background .hill-mid,.scene-background .hill-near { display:none; }
+.glass-card,.glass-tinted,.countdown-card {
+  background:rgba(241,246,255,.48)!important;
+  border:1px solid rgba(255,255,255,.78)!important;
+  box-shadow:0 16px 38px rgba(54,70,116,.13),0 1px 0 rgba(255,255,255,.88) inset!important;
+  -webkit-backdrop-filter:blur(10px) saturate(125%)!important;
+  backdrop-filter:blur(10px) saturate(125%)!important;
+}
+.glass-pill {
+  background:rgba(247,249,255,.60)!important;
+  border:1px solid rgba(255,255,255,.86)!important;
+  box-shadow:0 10px 28px rgba(54,70,116,.12),0 1px 0 rgba(255,255,255,.92) inset!important;
+  -webkit-backdrop-filter:blur(12px) saturate(130%)!important;
+  backdrop-filter:blur(12px) saturate(130%)!important;
+}
+.glass-tinted { background:rgba(205,219,246,.48)!important; border-color:rgba(255,255,255,.78)!important; }
+.glass-card:hover,.glass-pill:hover,.glass-tinted:hover,.glass-card:active,.glass-pill:active,.glass-tinted:active { transform:none; }
+.nav-active,.dock-btn-active,.filter-chip.active,.filter-chip[data-filter="High"].active,.filter-chip[data-filter="Medium"].active,.filter-chip[data-filter="Low"].active,.priority-group input[type="radio"]:checked+.priority-btn {
+  color:#34466f!important; background:rgba(255,255,255,.82)!important;
+  border-color:rgba(119,143,197,.34)!important; box-shadow:0 4px 14px rgba(76,96,151,.13)!important;
+}
+.btn-submit,.pomo-ctrl-primary,.pomo-card[data-mode="break"] .pomo-ctrl-primary {
+  color:#fff!important; background:linear-gradient(135deg,#8199ce,#7187ba)!important;
+  border-color:rgba(255,255,255,.58)!important; box-shadow:0 7px 20px rgba(91,113,174,.25)!important;
+}
+.btn-submit:hover,.pomo-ctrl-primary:hover,.pomo-card[data-mode="break"] .pomo-ctrl-primary:hover { background:linear-gradient(135deg,#748dc4,#637cae)!important; }
+/* Status tetap mudah dibedakan, tetapi memakai tone lembut dan tidak neon. */
+.state-emerald { color:#527f7b!important; }
+.state-amber { color:#94764f!important; }
+.state-rose { color:#986878!important; }
+.state-indigo { color:#536da5!important; }
+.badge-emerald,.phase-badge.safe { color:#527f7b!important; background:rgba(213,235,229,.68)!important; border:1px solid rgba(133,183,170,.32)!important; }
+.badge-amber,.phase-badge.warning { color:#94764f!important; background:rgba(244,231,210,.68)!important; border:1px solid rgba(202,174,133,.34)!important; }
+.badge-rose,.phase-badge.critical,.phase-badge.overdue { color:#986878!important; background:rgba(241,220,228,.70)!important; border:1px solid rgba(196,148,166,.34)!important; }
+.badge-indigo,.phase-badge.done { color:#536da5!important; background:rgba(220,229,248,.72)!important; border:1px solid rgba(145,166,211,.34)!important; }
+.priority-strip.high { background:#b98291!important; box-shadow:none!important; }
+.priority-strip.medium { background:#b99a72!important; box-shadow:none!important; }
+.priority-strip.low { background:#6f9d9a!important; box-shadow:none!important; }
+.priority-dot.high { background:#b98291!important; }
+.priority-dot.medium { background:#b99a72!important; }
+.priority-dot.low { background:#6f9d9a!important; }
+.stat-shimmer::after,.notif-pulse::before { animation:none!important; }
+.dock-btn:hover,.dock-btn:active,button:hover,button:active,[role="button"]:hover,[role="button"]:active { transform:none!important; }
+.countdown-card { content-visibility:auto; contain-intrinsic-size:150px; }
+@media(max-width:640px){.glass-card,.glass-tinted,.countdown-card{-webkit-backdrop-filter:blur(7px)!important;backdrop-filter:blur(7px)!important;}}
+
+
+/* ============================================================
+   PERBAIKAN TERARAH: POSISI DIALOG NOTIFIKASI + HALAMAN TUGAS
+   ============================================================ */
+
+/* Lebarkan dan pusatkan area konten halaman Tugas. */
+body[data-page="tugas"] .task-page-shell {
+  width: min(calc(100% - 2.5rem), 1120px);
+  max-width: 1120px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+body[data-page="tugas"] .task-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  gap: 1.25rem;
+  margin-inline: auto;
+}
+
+body[data-page="tugas"] .task-page-grid > article {
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+/*
+  Dialog ditempatkan di <html> oleh layout.js.
+  Posisi transform dibuat tetap pada semua state agar tidak "meloncat"
+  saat hover, focus, klik, maupun pergantian class animasi.
+*/
+#notif-permission-card {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: min(560px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  margin: 0 !important;
+  padding: clamp(20px, 3vw, 32px) !important;
+  z-index: 99999 !important;
+  box-sizing: border-box !important;
+  transform: translate3d(-50%, -50%, 0) !important;
+  transition: opacity 180ms ease !important;
+  will-change: opacity;
+  pointer-events: auto;
+}
+
+#notif-permission-card.notif-card-hidden {
+  opacity: 0 !important;
+  transform: translate3d(-50%, -50%, 0) !important;
+  pointer-events: none !important;
+}
+
+#notif-permission-card.notif-card-visible {
+  opacity: 1 !important;
+  transform: translate3d(-50%, -50%, 0) !important;
+  pointer-events: auto !important;
+}
+
+#notif-permission-card button {
+  position: relative;
+  z-index: 1;
+  min-height: 48px;
+  transform: none !important;
+  transition: background-color 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+#notif-permission-card button:hover,
+#notif-permission-card button:focus,
+#notif-permission-card button:active {
+  transform: none !important;
+}
+
+@media (max-width: 640px) {
+  body[data-page="tugas"] .task-page-shell {
+    width: calc(100% - 24px);
+  }
+  #notif-permission-card {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    padding: 20px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #notif-permission-card { transition: none !important; }
+}

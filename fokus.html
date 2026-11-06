@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Deadlinify — Mode Fokus: sesi Pomodoro untuk belajar lebih produktif." />
+  <title>Fokus — Deadlinify</title>
+
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: { DEFAULT: '#10b981' },
+            amber:   { DEFAULT: '#f59e0b' },
+            rose:    { DEFAULT: '#f43f5e' },
+            indigo:  { DEFAULT: '#6366f1' }
+          },
+          borderRadius: { card: '28px', pill: '9999px' }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="font-sans text-slate-800 antialiased" data-page="fokus">
+
+  <!-- Skip link aksesibilitas -->
+  <a href="#main-content" class="skip-link">Lewati ke konten utama</a>
+
+  <!-- Navbar, latar, dock, toast → disuntikkan oleh layout.js -->
+
+  <main id="main-content" class="main-content" tabindex="-1">
+    <div class="max-w-2xl mx-auto px-4 pt-24 pb-8">
+
+      <!-- Page heading -->
+      <section class="mb-6 text-center" aria-labelledby="fokus-page-heading">
+        <h1 id="fokus-page-heading" class="text-2xl sm:text-3xl font-bold text-slate-800">
+          Mode Fokus
+        </h1>
+        <p class="mt-1 text-slate-500 text-sm">
+          Gunakan teknik Pomodoro untuk belajar lebih efektif.
+          <span class="inline-block ml-1 text-slate-400 text-xs" title="Tekan Spasi untuk mulai/jeda">
+            [Spasi = Mulai/Jeda]
+          </span>
+        </p>
+      </section>
+
+      <!-- ── KARTU POMODORO UTAMA ── -->
+      <article class="pomo-card glass-tinted p-6 sm:p-8 text-center"
+               id="pomo-main-card"
+               aria-labelledby="card-pomodoro-heading"
+               data-mode="focus">
+
+        <!-- Label mode + hitungan sesi -->
+        <div class="flex items-center justify-center gap-3 mb-5">
+          <span id="pomo-mode-badge" class="phase-badge safe text-sm px-4 py-1" aria-live="polite">
+            🍅 Fokus
+          </span>
+          <span class="text-xs text-slate-500">
+            Sesi ke-<strong id="pomo-session-count" aria-live="polite">0</strong> hari ini
+          </span>
+        </div>
+
+        <!-- ── SVG RING PROGRESS ── -->
+        <!--
+          IMAGE SLOT: pomodoro-ring-bg, ukuran ideal 280×280px
+          Path: assets/pomodoro-ring-bg.svg | Fallback: SVG inline di bawah
+        -->
+        <div class="pomo-ring-wrap" role="img"
+             aria-label="Lingkaran progres sesi Pomodoro"
+             aria-hidden="true">
+          <svg class="pomo-ring-svg" viewBox="0 0 200 200"
+               xmlns="http://www.w3.org/2000/svg"
+               aria-hidden="true" focusable="false">
+            <!-- Track (latar ring) -->
+            <circle class="pomo-ring-track"
+                    cx="100" cy="100" r="86"
+                    fill="none"
+                    stroke-width="10"
+                    stroke-linecap="round"/>
+            <!-- Progress (berubah via JS) -->
+            <circle class="pomo-ring-progress"
+                    id="pomo-ring"
+                    cx="100" cy="100" r="86"
+                    fill="none"
+                    stroke-width="10"
+                    stroke-linecap="round"
+                    transform="rotate(-90 100 100)"/>
+          </svg>
+          <!-- Teks waktu di tengah ring -->
+          <div class="pomo-ring-center" aria-hidden="true">
+            <span id="pomo-time-display" class="pomo-time-big">25:00</span>
+            <span id="pomo-mode-label" class="pomo-mode-label-small">Fokus</span>
+          </div>
+        </div>
+
+        <!-- Waktu bisa diakses oleh screen reader via aria-live -->
+        <div class="sr-only" aria-live="polite" aria-atomic="true" id="pomo-sr-announce"></div>
+
+        <!-- ── KONTROL TIMER ── -->
+        <div class="flex gap-3 justify-center mt-5 mb-3" role="group"
+             aria-label="Kontrol sesi Pomodoro">
+
+          <!-- Tombol Reset -->
+          <button id="btn-pomo-reset" type="button"
+                  class="pomo-ctrl-btn pomo-ctrl-secondary"
+                  aria-label="Reset sesi Pomodoro">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+
+          <!-- Tombol Mulai / Jeda (utama) -->
+          <button id="btn-pomo-start" type="button"
+                  class="pomo-ctrl-btn pomo-ctrl-primary"
+                  aria-label="Mulai sesi Pomodoro">
+            <!-- ikon play (default) -->
+            <svg id="icon-play" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <!-- ikon pause (saat running) -->
+            <svg id="icon-pause" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          </button>
+
+          <!-- Tombol Skip -->
+          <button id="btn-pomo-skip" type="button"
+                  class="pomo-ctrl-btn pomo-ctrl-secondary"
+                  aria-label="Lewati ke sesi berikutnya">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+            </svg>
+          </button>
+
+        </div>
+
+        <!-- Tooltip pintasan keyboard -->
+        <p class="text-xs text-slate-400 mt-1" aria-hidden="true">
+          Tekan <kbd class="px-1.5 py-0.5 rounded bg-white/50 border border-slate-200 text-xs font-mono text-slate-500">Spasi</kbd>
+          untuk mulai/jeda
+        </p>
+
+      </article><!-- /.pomo-main-card -->
+
+      <!-- ── PILIHAN DURASI ── -->
+      <div class="grid grid-cols-3 gap-3 mt-5"
+           role="group" aria-label="Pilih durasi sesi fokus">
+
+        <button class="pomo-dur-btn glass-card p-3 text-center"
+                data-minutes="10"
+                aria-label="Durasi 10 menit">
+          <p class="text-lg font-bold text-slate-700">10</p>
+          <p class="text-xs text-slate-500">menit</p>
+        </button>
+
+        <button class="pomo-dur-btn glass-tinted p-3 text-center pomo-dur-active"
+                data-minutes="25"
+                aria-label="Durasi 25 menit (aktif)" aria-pressed="true">
+          <p class="text-lg font-bold text-indigo-700">25</p>
+          <p class="text-xs text-indigo-600">menit</p>
+        </button>
+
+        <button class="pomo-dur-btn glass-card p-3 text-center"
+                data-minutes="50"
+                aria-label="Durasi 50 menit">
+          <p class="text-lg font-bold text-slate-700">50</p>
+          <p class="text-xs text-slate-500">menit</p>
+        </button>
+
+      </div>
+
+      <!-- ── PILIHAN TUGAS FOKUS ── -->
+      <div class="glass-card p-4 mt-4" aria-labelledby="focus-task-label">
+        <label id="focus-task-label"
+               class="form-label mb-2 flex items-center gap-2">
+          <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 12l2 2 4-4"/>
+          </svg>
+          Sedang fokus pada tugas:
+        </label>
+        <select id="pomo-task-select"
+                class="glass-input glass-select"
+                aria-label="Pilih tugas yang sedang dikerjakan (opsional)">
+          <option value="">— Tidak ada (mode bebas) —</option>
+          <!-- Opsi tugas aktif diisi oleh JS -->
+        </select>
+      </div>
+
+      <!-- ── RIWAYAT SESI ── -->
+      <article class="glass-card p-6 mt-5" aria-labelledby="card-session-log-heading">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="card-session-log-heading"
+              class="text-base font-semibold text-slate-700 flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+            </svg>
+            Riwayat Sesi
+          </h2>
+          <!-- Statistik ringkas -->
+          <div class="text-right">
+            <p class="text-lg font-bold text-indigo-700" id="log-sessions-today">0</p>
+            <p class="text-xs text-slate-400">sesi hari ini</p>
+          </div>
+        </div>
+
+        <!-- IMAGE SLOT: session-log-empty, ukuran ideal 320×140px -->
+        <!-- Path: assets/session-log-empty.svg | Fallback: teks di bawah -->
+        <div id="session-log-list" aria-live="polite" aria-label="Riwayat sesi Pomodoro">
+          <!-- Diisi oleh JS -->
+        </div>
+
+      </article>
+
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-slate-500 py-4 pb-24" role="contentinfo">
+    &copy; 2025 Deadlinify &mdash; Asisten Akademis Mahasiswa
+  </footer>
+
+  <!-- Script: urutan harus: storage → notification → layout → pomodoro → (halaman) -->
+  <script src="js/auth.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/notification.js" defer></script>
+  <script src="js/layout.js" defer></script>
+  <script src="js/pomodoro.js" defer></script>
+
+  <script defer>
+  /* ──────────────────────────────────────────────────────────
+     fokus-page.js — Halaman Fokus (inline, defer)
+     Menghubungkan DOM fokus.html dengan window.Pomodoro
+  ────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    /* ── Konstanta SVG ring ── */
+    var RING_R          = 86;
+    var RING_CIRCUMFERENCE = 2 * Math.PI * RING_R; // ≈ 540.35
+
+    /* ── Elemen DOM ── */
+    var elRing      = document.getElementById('pomo-ring');
+    var elTime      = document.getElementById('pomo-time-display');
+    var elModeLabel = document.getElementById('pomo-mode-label');
+    var elModeBadge = document.getElementById('pomo-mode-badge');
+    var elSessions  = document.getElementById('pomo-session-count');
+    var elSrAnnounce= document.getElementById('pomo-sr-announce');
+    var elCard      = document.getElementById('pomo-main-card');
+    var elBtnStart  = document.getElementById('btn-pomo-start');
+    var elBtnReset  = document.getElementById('btn-pomo-reset');
+    var elBtnSkip   = document.getElementById('btn-pomo-skip');
+    var elIconPlay  = document.getElementById('icon-play');
+    var elIconPause = document.getElementById('icon-pause');
+    var elTaskSel   = document.getElementById('pomo-task-select');
+    var elLogList   = document.getElementById('session-log-list');
+    var elLogToday  = document.getElementById('log-sessions-today');
+
+    /* Set panjang circumference pada ring */
+    if (elRing) {
+      elRing.style.strokeDasharray  = RING_CIRCUMFERENCE;
+      elRing.style.strokeDashoffset = RING_CIRCUMFERENCE; /* awal = kosong */
+    }
+
+    /* ── Isi dropdown tugas aktif ── */
+    function _populateTaskSelect() {
+      if (!elTaskSel || typeof Storage === 'undefined') return;
+      var tasks = Storage.loadTasks().filter(function (t) { return !t.completed; });
+      tasks.sort(function (a, b) { return new Date(a.deadline) - new Date(b.deadline); });
+      var html = '<option value="">— Tidak ada (mode bebas) —</option>';
+      tasks.forEach(function (t) {
+        html += '<option value="' + _esc(t.id) + '">' + _esc(t.title) + ' (' + _esc(t.course) + ')</option>';
+      });
+      elTaskSel.innerHTML = html;
+      /* Pulihkan pilihan dari state */
+      var st = Pomodoro.getState();
+      if (st.focusedTaskId) elTaskSel.value = st.focusedTaskId;
+    }
+
+    elTaskSel && elTaskSel.addEventListener('change', function () {
+      Pomodoro.setFocusedTask(elTaskSel.value || null);
+    });
+
+    /* ── Render state ke DOM ── */
+    function _render(snap) {
+      if (!snap) return;
+
+      /* Waktu */
+      if (elTime) elTime.textContent = snap.formatted;
+
+      /* SVG Ring — progress searah jarum jam */
+      if (elRing) {
+        var offset = RING_CIRCUMFERENCE * (1 - snap.progress);
+        elRing.style.strokeDashoffset = offset;
+      }
+
+      /* Mode label + warna */
+      var isFocus  = snap.mode === 'focus';
+      var modeText = isFocus ? 'Fokus' : 'Istirahat';
+      var badgeText= isFocus ? '🍅 Fokus' : '☕ Istirahat';
+
+      if (elModeLabel) elModeLabel.textContent = modeText;
+      if (elModeBadge) {
+        elModeBadge.textContent = badgeText;
+        elModeBadge.className   = 'phase-badge text-sm px-4 py-1 ' + (isFocus ? 'critical' : 'safe');
+      }
+      if (elCard) elCard.dataset.mode = snap.mode;
+
+      /* Sesi */
+      if (elSessions) elSessions.textContent = snap.sessions || 0;
+
+      /* Ikon tombol start/pause */
+      var isRunning = snap.status === 'running';
+      if (elIconPlay)  elIconPlay.classList.toggle('hidden', isRunning);
+      if (elIconPause) elIconPause.classList.toggle('hidden', !isRunning);
+      if (elBtnStart) {
+        elBtnStart.setAttribute('aria-label',
+          isRunning ? 'Jeda sesi Pomodoro' : 'Mulai sesi Pomodoro');
+      }
+
+      /* Warna ring sesuai mode */
+      if (elRing) {
+        elRing.style.stroke = isFocus ? 'rgba(99,102,241,0.75)' : 'rgba(16,185,129,0.8)';
+      }
+
+      /* Umumkan ke screen reader setiap menit (bukan setiap detik) */
+      var secs = Math.ceil(snap.remaining / 1000);
+      if (secs % 60 === 0 && secs > 0 && isRunning && elSrAnnounce) {
+        elSrAnnounce.textContent = snap.formatted + ' tersisa untuk ' + modeText.toLowerCase();
+      }
+
+      /* Render riwayat sesi */
+      _renderLog();
+    }
+
+    /* ── Render log sesi ── */
+    function _renderLog() {
+      if (!elLogList) return;
+      var log   = Pomodoro.getLog();
+      var stats = Pomodoro.getStats();
+
+      if (elLogToday) elLogToday.textContent = stats.sessionsToday;
+
+      if (!log.length) {
+        elLogList.innerHTML =
+          '<div class="countdown-empty">' +
+          '  <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">' +
+          '    <circle cx="12" cy="12" r="8" stroke-width="1.5"/>' +
+          '    <path stroke-linecap="round" d="M12 8v4l3 2" stroke-width="1.5"/>' +
+          '  </svg>' +
+          '  <p>Belum ada sesi tercatat.<br>Mulai sesi pertamamu sekarang!</p>' +
+          '</div>';
+        return;
+      }
+
+      /* Ambil 10 entri terbaru */
+      var recent = log.slice(0, 10);
+      var html   = '<ul class="flex flex-col gap-2" role="list">';
+      recent.forEach(function (e) {
+        var isFocus = e.type === 'focus';
+        var skipped = e.skipped || false;
+        var durText = skipped ? 'dilewat' : (e.durMin + ' menit');
+        var timeStr = new Date(e.completedAt).toLocaleTimeString('id-ID', {
+          hour: '2-digit', minute: '2-digit'
+        });
+        var dateStr = new Date(e.completedAt).toLocaleDateString('id-ID', {
+          day: '2-digit', month: 'short'
+        });
+        html +=
+          '<li class="flex items-center gap-3 px-3 py-2.5 rounded-2xl ' +
+               (isFocus ? 'bg-indigo-50/60' : 'bg-emerald-50/60') + '">' +
+          '  <span class="text-xl" aria-hidden="true">' + (isFocus ? '🍅' : '☕') + '</span>' +
+          '  <div class="flex-1 min-w-0">' +
+          '    <p class="text-sm font-semibold text-slate-700">' +
+               (isFocus ? 'Sesi Fokus' : 'Istirahat') + ' &mdash; ' + durText +
+          '    </p>' +
+          '    <p class="text-xs text-slate-400">' + dateStr + ' pukul ' + timeStr + '</p>' +
+          '  </div>' +
+          '  <span class="phase-badge ' + (skipped ? 'warning' : (isFocus ? 'critical' : 'safe')) + ' text-xs">' +
+               (skipped ? 'Dilewat' : 'Selesai') +
+          '  </span>' +
+          '</li>';
+      });
+      html += '</ul>';
+      if (log.length > 10) {
+        html += '<p class="text-center text-xs text-slate-400 mt-3">+' + (log.length - 10) + ' sesi lainnya</p>';
+      }
+      elLogList.innerHTML = html;
+    }
+
+    /* ── Tombol pilihan durasi ── */
+    document.querySelectorAll('.pomo-dur-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var min = parseInt(btn.dataset.minutes, 10);
+        Pomodoro.setDuration(min);
+        /* Perbarui tampilan tombol aktif */
+        document.querySelectorAll('.pomo-dur-btn').forEach(function (b) {
+          var isActive = parseInt(b.dataset.minutes, 10) === min;
+          b.classList.toggle('pomo-dur-active', isActive);
+          b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+      });
+    });
+
+    /* ── Tombol kontrol ── */
+    elBtnStart && elBtnStart.addEventListener('click', function () {
+      var st = Pomodoro.getState();
+      if (st.status === 'running') {
+        Pomodoro.pause();
+      } else {
+        Pomodoro.start();
+      }
+    });
+    elBtnReset && elBtnReset.addEventListener('click', function () { Pomodoro.reset(); });
+    elBtnSkip  && elBtnSkip.addEventListener('click', function ()  { Pomodoro.skip();  });
+
+    /* ── Shortcut: Spasi → mulai/jeda ── */
+    document.addEventListener('keydown', function (e) {
+      /* Hindari intercept saat fokus di input/select/textarea/button */
+      var tag = document.activeElement ? document.activeElement.tagName : '';
+      if (['INPUT','SELECT','TEXTAREA','BUTTON','A'].indexOf(tag) !== -1) return;
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        var st = Pomodoro.getState();
+        if (st.status === 'running') { Pomodoro.pause(); } else { Pomodoro.start(); }
+      }
+    });
+
+    /* ── Daftarkan listener ke engine ── */
+    Pomodoro.onStateChange(_render);
+
+    /* ── Init ── */
+    _populateTaskSelect();
+    Pomodoro.init({ page: 'fokus' });
+
+    /* Perbarui dropdown jika tugas berubah di tab lain */
+    document.addEventListener('tasks:sync', _populateTaskSelect);
+
+    /* ── Util ── */
+    function _esc(str) {
+      return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+  }); /* end DOMContentLoaded */
+  </script>
+
+</body>
+</html>

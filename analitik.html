@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Deadlinify — Analitik: visualisasi data tren dan produktivitas akademis." />
+  <title>Analitik — Deadlinify</title>
+
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: { DEFAULT: '#10b981' },
+            amber:   { DEFAULT: '#f59e0b' },
+            rose:    { DEFAULT: '#f43f5e' },
+            indigo:  { DEFAULT: '#6366f1' }
+          },
+          borderRadius: { card: '28px', pill: '9999px' }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="style.css" />
+
+  <!--
+    Chart.js dimuat HANYA di halaman ini — tidak di halaman lain.
+    Versi 4.x via jsDelivr CDN.
+    Jika gagal dimuat (offline), charts.js menampilkan pesan ramah.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+          defer
+          onerror="window._chartJsFailed = true;"></script>
+</head>
+
+<body class="font-sans text-slate-800 antialiased" data-page="analitik">
+
+  <!-- Skip link aksesibilitas -->
+  <a href="#main-content" class="skip-link">Lewati ke konten utama</a>
+
+  <!-- Navbar, latar, dock, toast → disuntikkan oleh layout.js -->
+
+  <main id="main-content" class="main-content" tabindex="-1">
+    <div class="max-w-6xl mx-auto px-4 pt-24 pb-8">
+
+      <!-- ── PAGE HEADING ── -->
+      <section class="mb-6" aria-labelledby="analytics-page-heading">
+        <h1 id="analytics-page-heading" class="text-2xl sm:text-3xl font-bold text-slate-800">
+          Analitik
+        </h1>
+        <p class="mt-1 text-slate-500 text-sm">Lihat tren produktivitas dan distribusi tugas akademismu.</p>
+      </section>
+
+      <!-- ── BARIS RINGKASAN ANGKA ── -->
+      <!--
+        Empat angka cepat di atas grafik:
+        Total, Selesai, Tertunda (aktif), Terlambat
+      -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
+           aria-label="Ringkasan statistik tugas" role="region">
+
+        <div class="glass-card p-4 text-center stat-shimmer">
+          <p class="text-2xl font-bold text-slate-800" id="summary-total"
+             aria-label="Total tugas">0</p>
+          <p class="text-xs text-slate-500 font-medium mt-1">Total Tugas</p>
+        </div>
+
+        <div class="glass-tinted p-4 text-center stat-shimmer">
+          <p class="text-2xl font-bold text-emerald-700" id="summary-done"
+             aria-label="Tugas selesai">0</p>
+          <p class="text-xs text-slate-500 font-medium mt-1">Selesai</p>
+        </div>
+
+        <div class="glass-card p-4 text-center stat-shimmer">
+          <p class="text-2xl font-bold text-indigo-700" id="summary-active"
+             aria-label="Tugas aktif atau tertunda">0</p>
+          <p class="text-xs text-slate-500 font-medium mt-1">Tertunda</p>
+        </div>
+
+        <div class="glass-card p-4 text-center stat-shimmer">
+          <p class="text-2xl font-bold text-rose-600" id="summary-overdue"
+             aria-label="Tugas terlambat">0</p>
+          <p class="text-xs text-slate-500 font-medium mt-1">Terlambat</p>
+        </div>
+
+      </div><!-- /.baris ringkasan -->
+
+      <!-- ── GRID GRAFIK ── -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <!-- ── DOUGHNUT CHART: Distribusi Status Tugas ── -->
+        <article class="glass-card p-6" aria-labelledby="card-doughnut-heading">
+          <h2 id="card-doughnut-heading"
+              class="text-base font-semibold text-slate-700 mb-1 flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 3 A9 9 0 0 1 21 12 L12 12 Z" fill="rgba(16,185,129,0.2)"/>
+            </svg>
+            Distribusi Status Tugas
+          </h2>
+          <p class="text-xs text-slate-400 mb-4">
+            Proporsi tugas: Selesai, Aktif, dan Terlambat.
+          </p>
+
+          <!-- Container grafik — tinggi tetap, canvas mengisi via JS -->
+          <!-- IMAGE SLOT: doughnut-placeholder, ukuran ideal 280×280px -->
+          <!-- Path: assets/chart-donut-placeholder.svg | Fallback: empty state JS -->
+          <div id="chart-doughnut-container" class="chart-container-doughnut">
+            <canvas id="chart-doughnut"
+                    role="img"
+                    aria-label="Grafik donat distribusi status tugas — memuat data…"></canvas>
+          </div>
+
+          <!--
+            Tabel aksesibilitas tersembunyi secara visual (sr-only).
+            Screen reader membaca tabel ini sebagai alternatif canvas.
+          -->
+          <table id="sr-table-doughnut" class="sr-only" aria-label="Data distribusi status tugas">
+            <thead>
+              <tr><th scope="col">Status</th><th scope="col">Jumlah</th></tr>
+            </thead>
+            <!-- tbody diisi oleh charts.js -->
+          </table>
+        </article>
+
+        <!-- ── BAR CHART: Beban Akademis per Mata Kuliah ── -->
+        <article class="glass-card p-6" aria-labelledby="card-bar-heading">
+          <h2 id="card-bar-heading"
+              class="text-base font-semibold text-slate-700 mb-1 flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" d="M3 20h18M7 20V10M12 20V4M17 20v-7"/>
+            </svg>
+            Beban Akademis per Mata Kuliah
+          </h2>
+          <p class="text-xs text-slate-400 mb-4">
+            Jumlah tugas aktif per mata kuliah; bar biru = paling banyak.
+          </p>
+
+          <!-- Container grafik -->
+          <!-- IMAGE SLOT: bar-chart-placeholder, ukuran ideal 560×220px -->
+          <!-- Path: assets/chart-bar-placeholder.svg | Fallback: empty state JS -->
+          <div id="chart-bar-container" class="chart-container-bar">
+            <canvas id="chart-bar"
+                    role="img"
+                    aria-label="Grafik batang beban akademis per mata kuliah — memuat data…"></canvas>
+          </div>
+
+          <!-- Satu kalimat insight — diisi oleh charts.js -->
+          <p id="chart-bar-insight"
+             class="chart-insight"
+             aria-live="polite"
+             aria-label="Insight beban akademis"></p>
+
+          <!-- Tabel aksesibilitas tersembunyi -->
+          <table id="sr-table-bar" class="sr-only" aria-label="Data beban tugas per mata kuliah">
+            <thead>
+              <tr><th scope="col">Mata Kuliah</th><th scope="col">Tugas Aktif</th></tr>
+            </thead>
+            <!-- tbody diisi oleh charts.js -->
+          </table>
+        </article>
+
+        <!-- ── RINGKASAN ANALITIK (lebar penuh) ── -->
+        <article class="glass-card p-6 md:col-span-2" aria-labelledby="card-stats-summary-heading">
+          <h2 id="card-stats-summary-heading"
+              class="text-base font-semibold text-slate-700 flex items-center gap-2 mb-4">
+            <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            Ringkasan Analitik
+          </h2>
+          <!-- IMAGE SLOT: analytics-illustration, ukuran ideal 480×260px -->
+          <!-- Path: assets/analytics-illustration.svg | Fallback: grid statistik di bawah -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="glass-tinted p-4 text-center rounded-2xl">
+              <p class="text-2xl font-bold text-indigo-700" id="analytics-total"
+                 aria-label="Total tugas">0</p>
+              <p class="text-xs text-slate-500 font-medium mt-1">Total Tugas</p>
+            </div>
+            <div class="glass-tinted p-4 text-center rounded-2xl">
+              <p class="text-2xl font-bold text-emerald-700" id="analytics-completion"
+                 aria-label="Tingkat penyelesaian">0%</p>
+              <p class="text-xs text-slate-500 font-medium mt-1">Tingkat Penyelesaian</p>
+            </div>
+            <div class="glass-tinted p-4 text-center rounded-2xl">
+              <p class="text-2xl font-bold text-amber-700" id="analytics-overdue"
+                 aria-label="Tugas terlambat">0</p>
+              <p class="text-xs text-slate-500 font-medium mt-1">Tugas Terlambat</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400 text-center mt-3" id="analytics-last-update">
+            Data diperbarui secara otomatis saat tugas berubah.
+          </p>
+        </article>
+
+      </div><!-- /.grid -->
+
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-slate-500 py-4 pb-24" role="contentinfo">
+    &copy; 2025 Deadlinify &mdash; Asisten Akademis Mahasiswa
+  </footer>
+
+  <!--
+    Urutan script:
+      storage.js → notification.js → charts.js → layout.js → pomodoro.js → analitik.js
+    Chart.js (CDN) dimuat di <head> dengan defer, jadi tersedia sebelum charts.js berjalan.
+  -->
+  <script src="js/auth.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/notification.js" defer></script>
+  <script src="js/charts.js" defer></script>
+  <script src="js/layout.js" defer></script>
+  <script src="js/pomodoro.js" defer></script>
+  <script src="js/analitik.js" defer></script>
+
+</body>
+</html>

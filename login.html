@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Deadlinify — Masuk ke akun akademis Anda." />
+  <title>Masuk — Deadlinify</title>
+
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: { DEFAULT: '#10b981' },
+            amber:   { DEFAULT: '#f59e0b' },
+            rose:    { DEFAULT: '#f43f5e' },
+            indigo:  { DEFAULT: '#6366f1' }
+          },
+          borderRadius: { card: '28px', pill: '9999px' }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="font-sans text-slate-800 antialiased" data-page="login">
+
+  <!-- Skip link aksesibilitas -->
+  <a href="#main-content" class="skip-link">Lewati ke konten utama</a>
+
+  <!-- Latar belakang disuntikkan oleh auth.js (tidak memakai layout.js) -->
+
+  <main id="main-content"
+        class="min-h-screen flex items-center justify-center px-4 py-12"
+        tabindex="-1">
+
+    <div class="w-full max-w-md">
+
+      <!-- Logo & heading -->
+      <div class="text-center mb-8 section-enter">
+        <a href="index.html"
+           class="inline-flex items-center gap-3 mb-5 no-underline group"
+           aria-label="Deadlinify — Kembali ke Beranda">
+          <span class="w-12 h-12 rounded-2xl flex items-center justify-center
+                        bg-indigo-500/20 border border-indigo-300/40">
+            <svg class="w-7 h-7" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <rect x="4" y="6" width="24" height="18" rx="3"
+                    fill="rgba(99,102,241,0.25)" stroke="#6366f1" stroke-width="1.5"/>
+              <line x1="16" y1="6" x2="16" y2="24" stroke="#6366f1" stroke-width="1.5"/>
+              <path d="M11 10 L21 10 L17.5 15 L21 20 L11 20 L14.5 15 Z"
+                    fill="rgba(245,158,11,0.35)" stroke="#f59e0b" stroke-width="1.2"/>
+            </svg>
+          </span>
+          <span class="text-2xl font-bold text-slate-800
+                        group-hover:text-indigo-700 transition-colors">Deadlinify</span>
+        </a>
+        <h1 class="text-xl font-semibold text-slate-700">Selamat Datang Kembali</h1>
+        <p class="text-sm text-slate-500 mt-1">Masuk untuk melanjutkan sesi akademismu.</p>
+      </div>
+
+      <!-- Kartu form login -->
+      <div class="glass-card p-8 section-enter" style="--stagger-idx:1">
+
+        <!-- Error global -->
+        <div id="login-error"
+             class="hidden mb-4 p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/70
+                    flex items-start gap-3"
+             role="alert" aria-live="assertive">
+          <svg class="w-5 h-5 text-rose-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          <p id="login-error-text" class="text-sm text-rose-700 font-medium"></p>
+        </div>
+
+        <form id="login-form" novalidate>
+
+          <!-- Email -->
+          <div class="mb-4">
+            <label for="login-email" class="form-label">
+              Alamat Email
+            </label>
+            <input type="email"
+                   id="login-email"
+                   name="email"
+                   class="glass-input"
+                   placeholder="mahasiswa@universitas.ac.id"
+                   autocomplete="email"
+                   required
+                   aria-required="true"
+                   aria-describedby="login-email-error" />
+            <p id="login-email-error" class="field-error hidden" role="alert"></p>
+          </div>
+
+          <!-- Password -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="login-password" class="form-label mb-0">
+                Password
+              </label>
+            </div>
+            <div class="relative">
+              <input type="password"
+                     id="login-password"
+                     name="password"
+                     class="glass-input pr-12"
+                     placeholder="Masukkan password Anda"
+                     autocomplete="current-password"
+                     required
+                     aria-required="true"
+                     aria-describedby="login-password-error" />
+              <!-- Tombol show/hide password -->
+              <button type="button"
+                      id="btn-toggle-password"
+                      class="absolute right-3 top-1/2 -translate-y-1/2
+                             p-1.5 rounded-lg text-slate-400 hover:text-slate-600
+                             transition-colors"
+                      aria-label="Tampilkan password"
+                      aria-pressed="false">
+                <!-- Ikon "mata" (password tersembunyi) -->
+                <svg id="icon-eye" class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <!-- Ikon "mata tertutup" (password terlihat) -->
+                <svg id="icon-eye-off" class="w-4.5 h-4.5 hidden" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                </svg>
+              </button>
+            </div>
+            <p id="login-password-error" class="field-error hidden" role="alert"></p>
+          </div>
+
+          <!-- Tombol submit -->
+          <button type="submit"
+                  id="btn-login-submit"
+                  class="btn-submit w-full flex items-center justify-center gap-2 py-3">
+            <span id="login-btn-text">Masuk</span>
+            <!-- Spinner loading -->
+            <svg id="login-spinner"
+                 class="hidden w-4 h-4 animate-spin"
+                 fill="none" viewBox="0 0 24 24" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10"
+                      stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          </button>
+
+        </form>
+
+        <!-- Tautan ke register -->
+        <p class="text-center text-sm text-slate-500 mt-5">
+          Belum punya akun?
+          <a href="register.html"
+             class="font-semibold text-indigo-600 hover:text-indigo-800 transition-colors ml-1">
+            Daftar sekarang
+          </a>
+        </p>
+
+      </div><!-- /.glass-card -->
+
+      <!-- Catatan keamanan -->
+      <p class="text-center text-xs text-slate-400 mt-5">
+        🔒 Data akademismu tersimpan aman di server.
+      </p>
+
+    </div>
+  </main>
+
+  <!--
+    login.html TIDAK memuat layout.js karena tidak memerlukan navbar/dock.
+    auth.js menangani: latar belakang, form submit, redirect.
+  -->
+  <script src="js/auth.js" defer></script>
+
+</body>
+</html>

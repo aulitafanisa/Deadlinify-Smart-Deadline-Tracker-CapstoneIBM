@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Deadlinify — Kelola dan pantau semua deadline tugasmu." />
+  <title>Tugas — Deadlinify</title>
+
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: { DEFAULT: '#10b981' },
+            amber:   { DEFAULT: '#f59e0b' },
+            rose:    { DEFAULT: '#f43f5e' },
+            indigo:  { DEFAULT: '#6366f1' }
+          },
+          borderRadius: { card: '28px', pill: '9999px' }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="font-sans text-slate-800 antialiased" data-page="tugas">
+
+  <!-- Skip link aksesibilitas -->
+  <a href="#main-content" class="skip-link">Lewati ke konten utama</a>
+
+  <!-- Navbar, latar, dock, toast → disuntikkan oleh layout.js -->
+
+  <main id="main-content" class="main-content" tabindex="-1">
+    <div class="max-w-6xl mx-auto px-4 pt-24 pb-8">
+
+      <!-- Page heading -->
+      <section class="mb-6" aria-labelledby="page-heading">
+        <h1 id="page-heading" class="text-2xl sm:text-3xl font-bold text-slate-800">
+          Daftar Tugas
+        </h1>
+        <p class="mt-1 text-slate-500 text-sm">Tambah, pantau, dan kelola semua deadline akademismu.</p>
+      </section>
+
+      <!-- Grid: Form (kiri/atas) + Countdown cards (kanan/bawah) -->
+      <div class="dashboard-grid">
+
+        <!-- ─── FORM TAMBAH TUGAS ─── -->
+        <article class="glass-card p-6 col-span-2" aria-labelledby="card-form-heading">
+          <h2 id="card-form-heading"
+              class="text-base font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path stroke-linecap="round" d="M12 8v8M8 12h8"/>
+            </svg>
+            Tambah Tugas Baru
+          </h2>
+
+          <form id="task-form" novalidate aria-label="Formulir tambah tugas baru">
+
+            <!-- Error global -->
+            <div id="form-error-global" role="alert" aria-live="assertive"
+                 class="hidden mb-3 px-4 py-2 rounded-xl text-sm text-rose-700
+                        bg-rose-50/70 border border-rose-200/70"></div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <!-- Judul -->
+              <div class="sm:col-span-2">
+                <label for="input-title" class="form-label">
+                  Judul Tugas <span class="text-rose-500" aria-hidden="true">*</span>
+                </label>
+                <input id="input-title" name="title" type="text" class="glass-input"
+                       placeholder="Contoh: Laporan Praktikum Basis Data"
+                       autocomplete="off" maxlength="120"
+                       required aria-required="true" aria-describedby="error-title"/>
+                <span id="error-title" class="field-error" aria-live="polite"></span>
+              </div>
+
+              <!-- Mata Kuliah -->
+              <div>
+                <label for="input-course" class="form-label">
+                  Mata Kuliah <span class="text-rose-500" aria-hidden="true">*</span>
+                </label>
+                <input id="input-course" name="course" type="text" class="glass-input"
+                       placeholder="Contoh: Basis Data"
+                       autocomplete="off" maxlength="80"
+                       required aria-required="true" aria-describedby="error-course"/>
+                <span id="error-course" class="field-error" aria-live="polite"></span>
+              </div>
+
+              <!-- Tipe -->
+              <div>
+                <label for="input-type" class="form-label">
+                  Tipe Tugas <span class="text-rose-500" aria-hidden="true">*</span>
+                </label>
+                <select id="input-type" name="type" class="glass-input glass-select"
+                        required aria-required="true" aria-describedby="error-type">
+                  <option value="" disabled selected>Pilih tipe…</option>
+                  <option value="Tugas Harian">Tugas Harian</option>
+                  <option value="Pretest">Pretest</option>
+                  <option value="UTS">UTS</option>
+                  <option value="UAS">UAS</option>
+                </select>
+                <span id="error-type" class="field-error" aria-live="polite"></span>
+              </div>
+
+              <!-- Deadline -->
+              <div>
+                <label for="input-deadline" class="form-label">
+                  Deadline <span class="text-rose-500" aria-hidden="true">*</span>
+                </label>
+                <input id="input-deadline" name="deadline" type="datetime-local" class="glass-input"
+                       required aria-required="true" aria-describedby="error-deadline"/>
+                <span id="error-deadline" class="field-error" aria-live="polite"></span>
+              </div>
+
+              <!-- Prioritas -->
+              <div>
+                <fieldset>
+                  <legend class="form-label">
+                    Prioritas <span class="text-rose-500" aria-hidden="true">*</span>
+                  </legend>
+                  <span id="error-priority" class="field-error" aria-live="polite"></span>
+                  <div class="priority-group mt-1" role="radiogroup"
+                       aria-label="Pilih tingkat prioritas tugas"
+                       aria-describedby="error-priority">
+                    <input type="radio" id="priority-high" name="priority" value="High" aria-label="Prioritas Tinggi"/>
+                    <label for="priority-high" class="priority-btn"><span aria-hidden="true">🔴</span> Tinggi</label>
+                    <input type="radio" id="priority-medium" name="priority" value="Medium" aria-label="Prioritas Sedang"/>
+                    <label for="priority-medium" class="priority-btn"><span aria-hidden="true">🟡</span> Sedang</label>
+                    <input type="radio" id="priority-low" name="priority" value="Low" aria-label="Prioritas Rendah"/>
+                    <label for="priority-low" class="priority-btn"><span aria-hidden="true">🟢</span> Rendah</label>
+                  </div>
+                </fieldset>
+              </div>
+
+            </div><!-- /.grid -->
+
+            <div class="flex justify-end mt-5">
+              <button type="submit" class="btn-submit" id="btn-add-task">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                  <path stroke-linecap="round" d="M12 4v16M4 12h16"/>
+                </svg>
+                Tambah Tugas
+              </button>
+            </div>
+
+          </form>
+        </article>
+
+        <!-- ─── COUNTDOWN CARDS ─── -->
+        <article class="glass-card p-5 col-span-2" aria-labelledby="card-countdown-heading">
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h2 id="card-countdown-heading"
+                class="text-base font-semibold text-slate-700 flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24"
+                   stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" d="M5 3h14M5 21h14M7 3v4l5 5-5 5v4M17 3v4l-5 5 5 5v4"/>
+              </svg>
+              Countdown Deadline
+            </h2>
+
+            <!-- Filter Chips -->
+            <div class="filter-chips" role="group" aria-label="Filter daftar tugas" id="filter-chips">
+              <button class="filter-chip active" data-filter="all"   aria-pressed="true"  type="button">Semua</button>
+              <button class="filter-chip"        data-filter="active" aria-pressed="false" type="button">Aktif</button>
+              <button class="filter-chip"        data-filter="done"   aria-pressed="false" type="button">Selesai</button>
+              <button class="filter-chip"        data-filter="High"   aria-pressed="false" type="button"><span aria-hidden="true">🔴</span> Tinggi</button>
+              <button class="filter-chip"        data-filter="Medium" aria-pressed="false" type="button"><span aria-hidden="true">🟡</span> Sedang</button>
+              <button class="filter-chip"        data-filter="Low"    aria-pressed="false" type="button"><span aria-hidden="true">🟢</span> Rendah</button>
+            </div>
+          </div>
+
+          <!-- Grid kartu countdown — diisi oleh app.js -->
+          <!-- IMAGE SLOT: countdown-empty-state, ukuran ideal 280×180px -->
+          <!-- Path: assets/empty-deadline.svg | Fallback: SVG inline di JS -->
+          <div id="countdown-grid"
+               aria-live="polite"
+               aria-label="Daftar kartu countdown tugas"
+               role="list">
+          </div>
+        </article>
+
+        <!-- Kartu promo Analitik — ringkasan statistik & tautan ke analitik.html -->
+        <article class="glass-tinted p-6 md:col-span-2"
+                 aria-labelledby="card-analytics-promo-heading">
+          <h3 id="card-analytics-promo-heading"
+              class="text-base font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            Analitik &amp; Grafik
+          </h3>
+          <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+            Lihat distribusi status tugas, beban akademis per mata kuliah, dan tingkat penyelesaian
+            dalam grafik interaktif di halaman Analitik.
+          </p>
+          <!-- Statistik ringkas inline (dari localStorage, tanpa Chart.js) -->
+          <div class="grid grid-cols-3 gap-3 mb-4" id="tugas-analytics-row">
+            <div class="glass-card p-3 text-center rounded-2xl">
+              <p class="text-xl font-bold text-indigo-700" id="tugas-stat-total">—</p>
+              <p class="text-xs text-slate-500 mt-0.5">Total</p>
+            </div>
+            <div class="glass-card p-3 text-center rounded-2xl">
+              <p class="text-xl font-bold text-emerald-700" id="tugas-stat-done">—</p>
+              <p class="text-xs text-slate-500 mt-0.5">Selesai</p>
+            </div>
+            <div class="glass-card p-3 text-center rounded-2xl">
+              <p class="text-xl font-bold text-rose-600" id="tugas-stat-overdue">—</p>
+              <p class="text-xs text-slate-500 mt-0.5">Terlambat</p>
+            </div>
+          </div>
+          <a href="analitik.html"
+             class="btn-submit inline-flex items-center gap-2 text-sm py-2 px-5"
+             aria-label="Buka halaman Analitik untuk melihat grafik lengkap">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" d="M3 20h18M7 20V10M12 20V4M17 20v-7"/>
+            </svg>
+            Lihat Grafik Analitik
+          </a>
+        </article>
+
+      </div><!-- /.dashboard-grid -->
+
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-slate-500 py-4 pb-24" role="contentinfo">
+    &copy; 2025 Deadlinify &mdash; Asisten Akademis Mahasiswa
+  </footer>
+
+  <!-- Script: layout (injeksi komponen bersama) terlebih dahulu -->
+  <script src="js/auth.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/timer.js" defer></script>
+  <script src="js/charts.js" defer></script>
+  <script src="js/notification.js" defer></script>
+  <script src="js/layout.js" defer></script>
+  <script src="js/pomodoro.js" defer></script>
+  <!-- app.js: logika form + countdown cards (hanya berjalan di tugas.html) -->
+  <script src="js/app.js" defer></script>
+
+</body>
+</html>
